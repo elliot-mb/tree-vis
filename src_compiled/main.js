@@ -1,3 +1,18 @@
+var ButtonHandler = /** @class */ (function () {
+    function ButtonHandler(id) {
+        this.button = document.getElementById(id);
+    }
+    ButtonHandler.prototype.listen = function (fn) {
+        if (this.button === null) {
+            return "Error: button not found";
+        }
+        this.button.addEventListener("click", fn);
+        return "";
+    };
+    return ButtonHandler;
+}());
+var X_OFFSET = 5; //how bunched up the lines are
+var Y_OFFSET = 10; //how inset each line is into each block on the y axis
 var DocumentHandler = /** @class */ (function () {
     function DocumentHandler() {
         this.DOMTreeBox = document.getElementById(TREEBOX_ID);
@@ -12,18 +27,19 @@ var DocumentHandler = /** @class */ (function () {
     //     this.DOMTreeBox.appendChild(this.DOMTree);
     // }
     DocumentHandler.prototype.compileTreeToDOM = function (t) {
+        var tree = t.getTree();
         var DOMTree = this.DOMTreeBox;
         var page = { HTML: "<div id=\"tree\" class=\"tree\">" };
         this.headerID = 0;
-        if (t !== null)
-            this.treeToDOM(t.getTree(), page);
+        if (tree !== null)
+            this.treeToDOM(tree, page);
         page.HTML += "</div>";
         DOMTree.innerHTML = page.HTML;
         return "";
     };
     DocumentHandler.prototype.treeToDOM = function (t, page) {
         var _this = this;
-        var header = "<h1 id=\"".concat(this.headerID, "\">");
+        var header = "<h1 class=\"element\" id=\"".concat(this.headerID, "\">");
         var tree = t;
         header += tree.fst !== null ? "".concat(tree.fst[0]) : "";
         header += tree.snd !== null ? ", ".concat(tree.snd[0]) : "";
@@ -45,14 +61,21 @@ var DocumentHandler = /** @class */ (function () {
             }
         });
         page.HTML += "</div>";
-        console.log(page.HTML);
+        //console.log(page.HTML);
     };
-    DocumentHandler.prototype.nodePositionOnId = function (str) {
+    DocumentHandler.prototype.nodePositionOnId = function (str, top) {
         var rect = this.nodeBoxOnId(str);
-        return [(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2];
+        return [
+            (rect.left + rect.right) / 2,
+            top ? rect.top : rect.bottom
+        ];
     };
     DocumentHandler.prototype.nodeBoxOnId = function (str) {
-        return document.getElementById(str).getBoundingClientRect();
+        var elem = document.getElementById(str);
+        if (elem === null) {
+            return new DOMRectReadOnly(-1, -1, -1, -1);
+        }
+        return elem.getBoundingClientRect();
     };
     DocumentHandler.prototype.connectTree = function () {
         this.View = [];
@@ -60,17 +83,30 @@ var DocumentHandler = /** @class */ (function () {
     };
     DocumentHandler.prototype.connect = function (elem, id) {
         var _this = this;
-        var start = this.nodePositionOnId(id);
+        var start = this.nodePositionOnId(id, false);
         var nodes = elem.children[1];
         if (nodes === undefined) {
             return;
         }
         var treesArray = Array.prototype.slice.call(nodes.children);
-        treesArray.map(function (tree) {
+        var outDegree = treesArray.length;
+        var nodeBox = this.nodeBoxOnId(id);
+        var width = nodeBox.right - nodeBox.left;
+        var interval = (width - (2 * X_OFFSET)) / (outDegree - 1);
+        treesArray.map(function (tree, i) {
             //console.log(tree.children);
             if (tree.children[0] !== undefined) {
-                var end = _this.nodePositionOnId(tree.children[0].id);
-                _this.View.push([start, end]);
+                var end = _this.nodePositionOnId(tree.children[0].id, true);
+                _this.View.push([
+                    [
+                        nodeBox.left + X_OFFSET + (interval * i),
+                        start[1] - Y_OFFSET
+                    ],
+                    [
+                        end[0],
+                        end[1] + Y_OFFSET
+                    ]
+                ]);
                 _this.connect(tree, tree.children[0].id);
             }
         });
@@ -112,14 +148,11 @@ var Tree = /** @class */ (function () {
             };
             return;
         }
-        this.insertHere(x, this.tree);
+        this.insertHere(x, null, this.tree);
     };
-    Tree.prototype.insertHere = function (x, b) {
-        // console.log(`inserting ${x} at`, b);
+    Tree.prototype.insertHere = function (x, parent, b) {
         if (isFourNode(b)) { //split
-            console.log("splitting a 4 node");
-            if (b.parent === null) { //we are splitting the root
-                console.log("splitting the root");
+            if (parent === null) { //we are splitting the root
                 var rootVal = b.snd[0];
                 var newRoot = {
                     parent: null,
@@ -137,24 +170,24 @@ var Tree = /** @class */ (function () {
                     snd: null, trd: null
                 };
                 this.tree = newRoot;
-                this.insertHere(x, this.tree); //go up and then back down
+                this.insertHere(x, null, this.tree); //go up and then back down
                 return;
             }
             // not the root, just a normal fournode
-            if (isThreeNode(b.parent)) {
-                b = this.splitParentThreeNode(b, x);
+            if (isThreeNode(parent)) {
+                b = this.splitParentThreeNode(parent, b, x);
+                this.insertHere(x, parent, b);
             }
-            if (isTwoNode(b.parent)) {
-                b = this.splitParentTwoNode(b);
+            if (isTwoNode(parent)) {
+                b = this.splitParentTwoNode(parent, b);
+                this.insertHere(x, parent, b);
             }
-            this.insertHere(x, b);
             return;
         }
         if (isThreeNode(b)) {
-            console.log("is threenode");
-            if (x < b.fst[0]) {
+            if (x <= b.fst[0]) {
                 if (b.fst[1] !== null) { //recurse left
-                    this.insertHere(x, b.fst[1]);
+                    this.insertHere(x, b, b.fst[1]);
                     return;
                 }
                 //else slide values along
@@ -166,7 +199,7 @@ var Tree = /** @class */ (function () {
             }
             if (x > b.fst[0] && x < b.snd[0]) {
                 if (b.snd[1] !== null) { //recurse on middle
-                    this.insertHere(x, b.fst[2]);
+                    this.insertHere(x, b, b.fst[2]);
                     return;
                 }
                 //else put x in the middle
@@ -177,7 +210,7 @@ var Tree = /** @class */ (function () {
             }
             //larger than both
             if (b.snd[1] !== null) {
-                this.insertHere(x, b.snd[1]);
+                this.insertHere(x, b, b.snd[1]);
                 return;
             }
             //place x at the end
@@ -185,10 +218,9 @@ var Tree = /** @class */ (function () {
             //new bottom-level fournode
         }
         if (isTwoNode(b)) {
-            console.log("is twonode");
-            if (x < b.fst[0]) {
+            if (x <= b.fst[0]) {
                 if (b.fst[1] !== null) {
-                    this.insertHere(x, b.fst[1]); //left
+                    this.insertHere(x, b, b.fst[1]); //left
                     return;
                 }
                 b.snd = [b.fst[0], null];
@@ -196,92 +228,94 @@ var Tree = /** @class */ (function () {
                 return;
             }
             if (b.fst[2] !== null) {
-                this.insertHere(x, b.fst[2]);
+                this.insertHere(x, b, b.fst[2]);
                 return;
             }
             b.snd = [x, null];
         }
     };
-    Tree.prototype.splitParentTwoNode = function (b) {
+    Tree.prototype.splitParentTwoNode = function (p, b) {
         //if we're on the right of parent
-        if (b.parent.fst[0] <= b.fst[0]) {
-            b.parent.fst[2] = {
-                parent: b.parent,
+        var prt = p;
+        if (prt.fst[0] <= b.fst[0]) {
+            prt.fst[2] = {
+                parent: prt,
                 fst: b.fst,
                 snd: null, trd: null
             };
-            b.parent.snd = [b.snd[0], {
-                    parent: b.parent,
+            prt.snd = [b.snd[0], {
+                    parent: prt,
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = b.parent.snd[1];
+            b = prt.snd[1];
         }
         else {
             //we're on the left side
-            b.parent.snd = [b.parent.fst[0], b.parent.fst[2]];
-            b.parent.fst = [
+            prt.snd = [prt.fst[0], prt.fst[2]];
+            prt.fst = [
                 b.snd[0],
                 {
-                    parent: b.parent,
+                    parent: prt,
                     fst: b.fst,
                     snd: null, trd: null
                 },
                 {
-                    parent: b.parent,
+                    parent: prt,
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }
             ];
-            b = b.parent.fst[1];
+            b = prt.fst[2];
         }
         return b;
     };
-    Tree.prototype.splitParentThreeNode = function (b, x) {
+    Tree.prototype.splitParentThreeNode = function (p, b, x) {
         //split up from the right 
-        if (b.parent.snd[0] <= b.fst[0]) {
-            b.parent.snd[1] = {
-                parent: b.parent,
+        var prt = p;
+        if (prt.snd[0] <= b.fst[0]) {
+            prt.snd[1] = {
+                parent: prt,
                 fst: b.fst,
                 snd: null, trd: null
             };
-            b.parent.trd = [b.snd[0], {
-                    parent: b.parent,
+            prt.trd = [b.snd[0], {
+                    parent: prt,
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = b.parent.trd[1];
+            b = prt.trd[1];
             //split up from the left
         }
-        else if (b.parent.fst[0] >= b.trd[0]) {
-            b.parent.trd = b.parent.snd;
-            b.parent.snd = [b.parent.fst[0], b.parent.fst[2]];
-            b.parent.fst = [b.snd[0], {
-                    parent: b.parent,
+        else if (prt.fst[0] >= b.trd[0]) {
+            prt.trd = prt.snd;
+            prt.snd = [prt.fst[0], prt.fst[2]];
+            prt.fst = [b.snd[0], {
+                    parent: prt,
                     fst: b.fst,
                     snd: null, trd: null
                 },
                 {
-                    parent: b.parent,
+                    parent: prt,
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = x < b.parent.fst[0] ? b.parent.fst[1] : b.parent.fst[2];
+            b = x < prt.fst[0] ? prt.fst[1] : prt.fst[2];
             //split up from the middle
         }
         else {
-            b.parent.fst[2] = {
-                parent: b.parent,
+            prt.fst[2] = {
+                parent: prt,
                 fst: b.fst,
                 snd: null, trd: null
             };
-            b.parent.trd = b.parent.snd;
-            b.parent.snd = [b.snd[0], {
-                    parent: b.parent,
+            prt.trd = prt.snd;
+            prt.snd = [b.snd[0], {
+                    parent: prt,
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = x < b.parent.snd[0] ? b.parent.fst[2] : b.parent.snd[1];
+            b = x < prt.snd[0] ? prt.fst[2] : prt.snd[1];
         }
         return b;
     };
@@ -312,8 +346,24 @@ var Tree = /** @class */ (function () {
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 var tree = new Tree();
-tree.print();
-// tree.connectTree();
+var btnHandler = new ButtonHandler("insert-button");
+btnHandler.listen(function () {
+    var _a;
+    var entry = document.getElementById("new-node-entry");
+    if (entry === null) {
+        return;
+    }
+    var entryText = entry.textContent === null ? "" : entry.value;
+    console.log(entryText);
+    var r = /-?[0-9]+/;
+    var numberPlain = (_a = r.exec(entryText)) === null || _a === void 0 ? void 0 : _a.toString();
+    if (numberPlain === undefined) {
+        return;
+    }
+    var value = +numberPlain;
+    tree.insert(value);
+    recompile();
+});
 var resize = function () {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -329,40 +379,21 @@ var drawFrame = function () {
     tree.draw(ctx);
 };
 var recompile = function () {
-    tree.compile();
+    tree.compile(); //expensive operation
     setTimeout(function () {
-        tree.update();
-        tree.draw(ctx);
+        drawFrame();
     }, 100);
 };
 window.addEventListener('resize', resize, false);
-resize();
-tree.insert(6);
-tree.insert(5);
-tree.insert(3);
-tree.insert(2);
-tree.insert(1);
-tree.insert(4);
+setTimeout(function () {
+    resize();
+}, 100);
+// for(let i: number = 1; i < 20; i++){
+//     console.log(`--------inserting ${i}--------`);
+//     tree.insert(i);
+// }
 tree.print();
 recompile();
-// tree.insert(0);
-// tree.print();
-// tree.insert(-1);
-// tree.print();
-// tree.insert(7);
-// tree.print();
-// tree.insert(5);
-// tree.print();
-// tree.insert(6);
-// tree.print();
-// tree.insert(0);
-// tree.print();
-// tree.insert(-1);
-// // tree.print();
-// tree.insert(7);
-// tree.print();
-// tree.insert(8);
-// tree.print();
 // const mainLoop: (() => void) = () => {
 //     background();
 //     tree.draw(ctx);
