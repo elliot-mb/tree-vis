@@ -2,6 +2,9 @@ type HTMLBox = {
     HTML: string
 };
 
+const X_OFFSET = 5; //how bunched up the lines are
+const Y_OFFSET = 10; //how inset each line is into each block on the y axis
+
 class DocumentHandler { 
     private DOMTreeBox: HTMLElement = document.getElementById(TREEBOX_ID)!;
     private headerID = 0;
@@ -21,18 +24,19 @@ class DocumentHandler {
     //     this.DOMTreeBox.appendChild(this.DOMTree);
     // }
 
-    compileTreeToDOM(t: Tree): string { //returns its error 
+    compileTreeToDOM(t: Tree): string { //returns its error
+        const tree = t.getTree(); 
         const DOMTree = this.DOMTreeBox;
         const page: HTMLBox = { HTML: `<div id="tree" class="tree">` };
         this.headerID = 0;
-        if(t !== null) this.treeToDOM(t.getTree(), page);
+        if(tree !== null) this.treeToDOM(tree, page);
         page.HTML += `</div>`;
         DOMTree.innerHTML = page.HTML;
         return "";
     }
 
     private treeToDOM(t: Branch, page: HTMLBox){
-        let header = `<h1 id="${this.headerID}">`;
+        let header = `<h1 class="element" id="${this.headerID}">`;
         const tree = t!;
         header += tree.fst !== null ? `${tree.fst[0]}` : ""; 
         header += tree.snd !== null ? `, ${tree.snd[0]}` : "";
@@ -55,16 +59,21 @@ class DocumentHandler {
             }
         });
         page.HTML += `</div>`;
-        console.log(page.HTML);
+        //console.log(page.HTML);
     }
 
-    private nodePositionOnId(str: string): Pair {
+    private nodePositionOnId(str: string, top: boolean): Pair {
         let rect: Box = this.nodeBoxOnId(str);
-        return [(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2];
+        return [
+            (rect.left + rect.right) / 2, 
+            top ? rect.top : rect.bottom
+        ];
     }
 
     private nodeBoxOnId(str: string): Box {
-        return (document.getElementById(str) as HTMLElement).getBoundingClientRect();
+        let elem = document.getElementById(str);
+        if(elem === null) { return new DOMRectReadOnly(-1, -1, -1, -1); }
+        return elem.getBoundingClientRect();
     }
 
     connectTree(): void{
@@ -73,15 +82,27 @@ class DocumentHandler {
     }
 
     private connect(elem: HTMLElement, id: string): void{
-        const start: Pair = this.nodePositionOnId(id);
+        const start: Pair = this.nodePositionOnId(id, false);
         const nodes = elem.children[1];
         if(nodes === undefined) { return; }
-        const treesArray = Array.prototype.slice.call(nodes.children);
-        treesArray.map((tree) => {
+        const treesArray: HTMLElement[] = Array.prototype.slice.call(nodes.children);
+        const outDegree = treesArray.length;
+        const nodeBox = this.nodeBoxOnId(id);
+        const width = nodeBox.right - nodeBox.left;
+        const interval: number = (width - (2 * X_OFFSET)) / (outDegree - 1);
+        treesArray.map((tree, i) => {
             //console.log(tree.children);
             if(tree.children[0] !== undefined) {
-                const end: Pair = this.nodePositionOnId((tree.children[0] as HTMLElement).id);
-                this.View.push([start, end]);
+                const end: Pair = this.nodePositionOnId((tree.children[0] as HTMLElement).id, true);
+                this.View.push([
+                [
+                    nodeBox.left + X_OFFSET + (interval * i), 
+                    start[1] - Y_OFFSET
+                ], 
+                [
+                    end[0], 
+                    end[1] + Y_OFFSET
+                ]]);
                 this.connect(tree as HTMLElement, (tree.children[0] as HTMLElement).id);
             }
         });
