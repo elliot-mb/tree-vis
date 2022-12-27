@@ -32,7 +32,7 @@ class DocumentHandler {
     }
 
     private treeToDOM(t: Branch, page: HTMLBox){
-        let header = `<h1 id="${this.headerID}">`;
+        let header = `<h1 class="element" id="${this.headerID}">`;
         const tree = t!;
         header += tree.fst !== null ? `${tree.fst[0]}` : ""; 
         header += tree.snd !== null ? `, ${tree.snd[0]}` : "";
@@ -55,12 +55,15 @@ class DocumentHandler {
             }
         });
         page.HTML += `</div>`;
-        console.log(page.HTML);
+        //console.log(page.HTML);
     }
 
-    private nodePositionOnId(str: string): Pair {
+    private nodePositionOnId(str: string, top: boolean): Pair {
         let rect: Box = this.nodeBoxOnId(str);
-        return [(rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2];
+        return [
+            (rect.left + rect.right) / 2, 
+            top ? rect.top : rect.bottom
+        ];
     }
 
     private nodeBoxOnId(str: string): Box {
@@ -73,14 +76,14 @@ class DocumentHandler {
     }
 
     private connect(elem: HTMLElement, id: string): void{
-        const start: Pair = this.nodePositionOnId(id);
+        const start: Pair = this.nodePositionOnId(id, false);
         const nodes = elem.children[1];
         if(nodes === undefined) { return; }
         const treesArray = Array.prototype.slice.call(nodes.children);
         treesArray.map((tree) => {
             //console.log(tree.children);
             if(tree.children[0] !== undefined) {
-                const end: Pair = this.nodePositionOnId((tree.children[0] as HTMLElement).id);
+                const end: Pair = this.nodePositionOnId((tree.children[0] as HTMLElement).id, true);
                 this.View.push([start, end]);
                 this.connect(tree as HTMLElement, (tree.children[0] as HTMLElement).id);
             }

@@ -41,14 +41,14 @@ class Tree {
             };
             return;
         }
-        this.insertHere(x, this.tree);
+        this.insertHere(x, null, this.tree);
     }
 
-    private insertHere(x: number, b: Branch): void {
+    private insertHere(x: number, parent: Branch, b: Branch): void {
         // console.log(`inserting ${x} at`, b);
         if (isFourNode(b)) { //split
             console.log("splitting a 4 node");
-            if(b!.parent === null) { //we are splitting the root
+            if(parent === null) { //we are splitting the root
                 console.log("splitting the root");
                 const rootVal: number = b!.snd![0];
                 const newRoot: Branch = {
@@ -67,25 +67,27 @@ class Tree {
                     snd: null, trd: null
                 }
                 this.tree = newRoot;
-                this.insertHere(x, this.tree); //go up and then back down
+                this.insertHere(x, null, this.tree); //go up and then back down
                 return;
             }
             // not the root, just a normal fournode
-            if(isThreeNode(b!.parent)){
-                b = this.splitParentThreeNode(b, x);
+            if(isThreeNode(parent)){
+                console.log("A threenode above");
+                b = this.splitParentThreeNode(parent, b, x);
+                this.insertHere(x, parent, b); 
             }
-            if(isTwoNode(b!.parent)){
-                b = this.splitParentTwoNode(b);
+            if(isTwoNode(parent)){
+                console.log("A twonode above");
+                b = this.splitParentTwoNode(parent, b);
+                this.insertHere(x, parent, b); 
             }
-            this.insertHere(x, b); 
             return;
         }
 
         if (isThreeNode(b)) {
-            console.log("is threenode");
             if(x < b!.fst[0]) {
                 if(b!.fst[1] !== null) { //recurse left
-                    this.insertHere(x, b!.fst[1]);
+                    this.insertHere(x, b, b!.fst[1]);
                     return;
                 }
                 //else slide values along
@@ -97,7 +99,7 @@ class Tree {
             }
             if(x > b!.fst[0] && x < b!.snd![0]){
                 if(b!.snd![1] !== null) { //recurse on middle
-                    this.insertHere(x, b!.fst[2]);
+                    this.insertHere(x, b, b!.fst[2]);
                     return;
                 }
                 //else put x in the middle
@@ -108,7 +110,7 @@ class Tree {
             }
             //larger than both
             if(b!.snd![1] !== null) {
-                this.insertHere(x, b!.snd![1]);
+                this.insertHere(x, b, b!.snd![1]);
                 return;
             }
             //place x at the end
@@ -116,10 +118,9 @@ class Tree {
             //new bottom-level fournode
         }
         if (isTwoNode(b)) {
-            console.log("is twonode");
             if(x < b!.fst[0]){
                 if(b!.fst[1] !== null){
-                    this.insertHere(x, b!.fst[1]); //left
+                    this.insertHere(x, b, b!.fst[1]); //left
                     return
                 }
                 b!.snd = [b!.fst[0], null];
@@ -127,31 +128,34 @@ class Tree {
                 return
             }
             if(b!.fst[2] !== null){
-                this.insertHere(x, b!.fst[2]);
+                this.insertHere(x, b, b!.fst[2]);
                 return
             }
             b!.snd = [x, null];
         }
     }
 
-    private splitParentTwoNode(b: Branch): Branch{
+    private splitParentTwoNode(p: Branch, b: Branch): Branch{
         //if we're on the right of parent
-        if(b!.parent!.fst[0] <= b!.fst[0]){
-            b!.parent!.fst![2] = {
+        const prt = p!;
+        if(prt.fst[0] <= b!.fst[0]){
+            console.log("hi!");
+            prt.fst![2] = {
                 parent: b!.parent,
                 fst: b!.fst,
                 snd: null, trd: null
             };
-            b!.parent!.snd = [b!.snd![0], {
+            prt.snd = [b!.snd![0], {
                 parent: b!.parent,
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                 snd: null, trd: null
             }];
-            b = b!.parent!.snd[1];
+            b = prt.snd[1];
         }else{
         //we're on the left side
-            b!.parent!.snd = [b!.parent!.fst[0], b!.parent!.fst[2]];
-            b!.parent!.fst = [
+            console.log("bye!");
+            prt.snd = [prt.fst[0], prt.fst[2]];
+            prt.fst = [
                 b!.snd![0],
                 {
                     parent: b!.parent,
@@ -164,30 +168,33 @@ class Tree {
                     snd: null, trd: null
                 }
             ];
-            b = b!.parent!.fst[1];
+            b = prt.fst[2];
         }
         return b;
     }
 
-    private splitParentThreeNode(b: Branch, x: number): Branch{
+    private splitParentThreeNode(p: Branch, b: Branch, x: number): Branch{
         //split up from the right 
-        if(b!.parent!.snd![0] <= b!.fst[0]){
-            b!.parent!.snd![1] = { //snd is defined because we're there now
+        const prt = p!;
+        if(prt.snd![0] <= b!.fst[0]){
+            console.log("sigh!");
+            prt.snd![1] = { //snd is defined because we're there now
                 parent: b!.parent,
                 fst: b!.fst,
                 snd: null, trd: null
             }
-            b!.parent!.trd = [b!.snd![0], { 
+            prt.trd = [b!.snd![0], { 
                 parent: b!.parent,
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]], 
                 snd: null, trd: null
             }];
-            b = b!.parent!.trd[1];
+            b = prt.trd[1];
         //split up from the left
-        }else if(b!.parent!.fst[0] >= b!.trd![0]){
-            b!.parent!.trd = b!.parent!.snd;
-            b!.parent!.snd = [b!.parent!.fst[0], b!.parent!.fst[2]];
-            b!.parent!.fst = [b!.snd![0], {
+        }else if(prt.fst[0] >= b!.trd![0]){
+            console.log("cry!");
+            prt.trd = prt.snd;
+            prt.snd = [prt.fst[0], prt.fst[2]];
+            prt.fst = [b!.snd![0], {
                 parent: b!.parent,
                 fst: b!.fst,
                 snd: null, trd: null
@@ -197,21 +204,21 @@ class Tree {
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                 snd: null, trd: null   
             }];
-            b = x < b!.parent!.fst[0] ? b!.parent!.fst[1] : b!.parent!.fst[2];
+            b = x < prt.fst[0] ? prt.fst[1] : prt.fst[2];
         //split up from the middle
         }else{
-            b!.parent!.fst[2] = {
+            prt.fst[2] = {
                 parent: b!.parent,
                 fst: b!.fst,
                 snd: null, trd: null
             };
-            b!.parent!.trd = b!.parent!.snd;
-            b!.parent!.snd = [ b!.snd![0], {
+            prt.trd = prt.snd;
+            prt.snd = [ b!.snd![0], {
                 parent: b!.parent,
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                 snd: null, trd: null
             }];
-            b = x < b!.parent!.snd[0] ? b!.parent!.fst[2] : b!.parent!.snd[1];
+            b = x < prt.snd[0] ? prt.fst[2] : prt.snd[1];
         }
         return b;
     }
