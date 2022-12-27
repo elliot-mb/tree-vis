@@ -78,7 +78,7 @@ class Tree {
             }
             if(isTwoNode(parent)){
                
-                b = this.splitParentTwoNode(parent, b);
+                b = this.splitParentTwoNode(parent, b, x);
                 this.insertHere(x, parent, b); 
             }
             return;
@@ -135,7 +135,7 @@ class Tree {
         }
     }
 
-    private splitParentTwoNode(p: Branch, b: Branch): Branch{
+    private splitParentTwoNode(p: Branch, b: Branch, x: number): Branch{
         //if we're on the right of parent
         const prt = p!;
         if(prt.fst[0] <= b!.fst[0]){
@@ -150,7 +150,7 @@ class Tree {
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                 snd: null, trd: null
             }];
-            b = prt.snd[1];
+            b = x < prt.snd[0] ? prt.fst[2] : prt.snd[1];
         }else{
         //we're on the left side
          
@@ -168,7 +168,7 @@ class Tree {
                     snd: null, trd: null
                 }
             ];
-            b = prt.fst[2];
+            b = x < prt.fst[0] ? prt.fst[1] : prt.fst[2];
         }
         return b;
     }
@@ -188,7 +188,7 @@ class Tree {
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]], 
                 snd: null, trd: null
             }];
-            b = prt.trd[1];
+            b = x < prt.trd[0] ? prt.snd![1] : prt.trd[1];
         //split up from the left
         }else if(prt.fst[0] >= b!.trd![0]){
        

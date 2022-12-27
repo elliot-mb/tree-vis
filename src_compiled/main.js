@@ -179,7 +179,7 @@ var Tree = /** @class */ (function () {
                 this.insertHere(x, parent, b);
             }
             if (isTwoNode(parent)) {
-                b = this.splitParentTwoNode(parent, b);
+                b = this.splitParentTwoNode(parent, b, x);
                 this.insertHere(x, parent, b);
             }
             return;
@@ -234,7 +234,7 @@ var Tree = /** @class */ (function () {
             b.snd = [x, null];
         }
     };
-    Tree.prototype.splitParentTwoNode = function (p, b) {
+    Tree.prototype.splitParentTwoNode = function (p, b, x) {
         //if we're on the right of parent
         var prt = p;
         if (prt.fst[0] <= b.fst[0]) {
@@ -248,7 +248,7 @@ var Tree = /** @class */ (function () {
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = prt.snd[1];
+            b = x < prt.snd[0] ? prt.fst[2] : prt.snd[1];
         }
         else {
             //we're on the left side
@@ -266,7 +266,7 @@ var Tree = /** @class */ (function () {
                     snd: null, trd: null
                 }
             ];
-            b = prt.fst[2];
+            b = x < prt.fst[0] ? prt.fst[1] : prt.fst[2];
         }
         return b;
     };
@@ -284,7 +284,7 @@ var Tree = /** @class */ (function () {
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = prt.trd[1];
+            b = x < prt.trd[0] ? prt.snd[1] : prt.trd[1];
             //split up from the left
         }
         else if (prt.fst[0] >= b.trd[0]) {
