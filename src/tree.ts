@@ -141,12 +141,12 @@ class Tree {
         if(prt.fst[0] <= b!.fst[0]){
             console.log("hi!");
             prt.fst![2] = {
-                parent: b!.parent,
+                parent: prt,
                 fst: b!.fst,
                 snd: null, trd: null
             };
             prt.snd = [b!.snd![0], {
-                parent: b!.parent,
+                parent: prt,
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                 snd: null, trd: null
             }];
@@ -158,12 +158,12 @@ class Tree {
             prt.fst = [
                 b!.snd![0],
                 {
-                    parent: b!.parent,
+                    parent: prt,
                     fst: b!.fst,
                     snd: null, trd: null
                 },
                 {
-                    parent: b!.parent,
+                    parent: prt,
                     fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                     snd: null, trd: null
                 }
@@ -179,12 +179,12 @@ class Tree {
         if(prt.snd![0] <= b!.fst[0]){
             console.log("sigh!");
             prt.snd![1] = { //snd is defined because we're there now
-                parent: b!.parent,
+                parent: prt,
                 fst: b!.fst,
                 snd: null, trd: null
             }
             prt.trd = [b!.snd![0], { 
-                parent: b!.parent,
+                parent: prt,
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]], 
                 snd: null, trd: null
             }];
@@ -195,12 +195,12 @@ class Tree {
             prt.trd = prt.snd;
             prt.snd = [prt.fst[0], prt.fst[2]];
             prt.fst = [b!.snd![0], {
-                parent: b!.parent,
+                parent: prt,
                 fst: b!.fst,
                 snd: null, trd: null
             },
             {
-                parent: b!.parent,
+                parent: prt,
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                 snd: null, trd: null   
             }];
@@ -208,13 +208,13 @@ class Tree {
         //split up from the middle
         }else{
             prt.fst[2] = {
-                parent: b!.parent,
+                parent: prt,
                 fst: b!.fst,
                 snd: null, trd: null
             };
             prt.trd = prt.snd;
             prt.snd = [ b!.snd![0], {
-                parent: b!.parent,
+                parent: prt,
                 fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
                 snd: null, trd: null
             }];

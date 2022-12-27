@@ -36,7 +36,7 @@ setTimeout(() => {
     resize();
 }, 100);
 
-for(let i: number = 1; i < 30; i++){
+for(let i: number = 1; i < 20; i++){
     console.log(`--------inserting ${i}--------`);
     tree.insert(i);
 }
