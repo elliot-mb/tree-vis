@@ -14,7 +14,7 @@ const isThreeNode = (b: Branch): boolean => {
 }
 
 const isFourNode = (b: Branch): boolean => {
-    return b !== null && !isTwoNode(b) && !(isThreeNode);
+    return b !== null && !isTwoNode(b) && !isThreeNode(b);
 }
 
 type Pair = [number, number]; //x, y
@@ -39,13 +39,17 @@ class Tree {
                 fst: [x, null, null],
                 snd: null, trd: null
             };
+            return;
         }
         this.insertHere(x, this.tree);
     }
 
     private insertHere(x: number, b: Branch): void {
+        // console.log(`inserting ${x} at`, b);
         if (isFourNode(b)) { //split
+            console.log("splitting a 4 node");
             if(b!.parent === null) { //we are splitting the root
+                console.log("splitting the root");
                 const rootVal: number = b!.snd![0];
                 const newRoot: Branch = {
                     parent: null,
@@ -63,35 +67,22 @@ class Tree {
                     snd: null, trd: null
                 }
                 this.tree = newRoot;
+                this.insertHere(x, this.tree); //go up and then back down
+                return;
             }
             // not the root, just a normal fournode
             if(isThreeNode(b!.parent)){
-                b!.parent!.snd![1] = { //snd is defined because we're there now
-                    parent: b!.parent,
-                    fst: b!.fst,
-                    snd: null, trd: null
-                }
-                b!.parent!.trd = [b!.snd![0], { 
-                    parent: b!.parent,
-                    fst: [b!.trd![0], b!.snd![1], b!.trd![1]], 
-                    snd: null, trd: null
-                }];
+                b = this.splitParentThreeNode(b, x);
             }
             if(isTwoNode(b!.parent)){
-                b!.parent!.fst![1] = {
-                    parent: b!.parent,
-                    fst: b!.fst,
-                    snd: null, trd: null
-                }  
-                b!.parent!.snd = [b!.snd![0], {
-                    parent: b!.parent,
-                    fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
-                    snd: null, trd: null
-                }];
+                b = this.splitParentTwoNode(b);
             }
-            this.insertHere(x, b!.parent); //go up and then back down
+            this.insertHere(x, b); 
+            return;
         }
+
         if (isThreeNode(b)) {
+            console.log("is threenode");
             if(x < b!.fst[0]) {
                 if(b!.fst[1] !== null) { //recurse left
                     this.insertHere(x, b!.fst[1]);
@@ -125,6 +116,7 @@ class Tree {
             //new bottom-level fournode
         }
         if (isTwoNode(b)) {
+            console.log("is twonode");
             if(x < b!.fst[0]){
                 if(b!.fst[1] !== null){
                     this.insertHere(x, b!.fst[1]); //left
@@ -142,6 +134,92 @@ class Tree {
         }
     }
 
+    private splitParentTwoNode(b: Branch): Branch{
+        //if we're on the right of parent
+        if(b!.parent!.fst[0] <= b!.fst[0]){
+            b!.parent!.fst![2] = {
+                parent: b!.parent,
+                fst: b!.fst,
+                snd: null, trd: null
+            };
+            b!.parent!.snd = [b!.snd![0], {
+                parent: b!.parent,
+                fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
+                snd: null, trd: null
+            }];
+            b = b!.parent!.snd[1];
+        }else{
+        //we're on the left side
+            b!.parent!.snd = [b!.parent!.fst[0], b!.parent!.fst[2]];
+            b!.parent!.fst = [
+                b!.snd![0],
+                {
+                    parent: b!.parent,
+                    fst: b!.fst,
+                    snd: null, trd: null
+                },
+                {
+                    parent: b!.parent,
+                    fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
+                    snd: null, trd: null
+                }
+            ];
+            b = b!.parent!.fst[1];
+        }
+        return b;
+    }
+
+    private splitParentThreeNode(b: Branch, x: number): Branch{
+        //split up from the right 
+        if(b!.parent!.snd![0] <= b!.fst[0]){
+            b!.parent!.snd![1] = { //snd is defined because we're there now
+                parent: b!.parent,
+                fst: b!.fst,
+                snd: null, trd: null
+            }
+            b!.parent!.trd = [b!.snd![0], { 
+                parent: b!.parent,
+                fst: [b!.trd![0], b!.snd![1], b!.trd![1]], 
+                snd: null, trd: null
+            }];
+            b = b!.parent!.trd[1];
+        //split up from the left
+        }else if(b!.parent!.fst[0] >= b!.trd![0]){
+            b!.parent!.trd = b!.parent!.snd;
+            b!.parent!.snd = [b!.parent!.fst[0], b!.parent!.fst[2]];
+            b!.parent!.fst = [b!.snd![0], {
+                parent: b!.parent,
+                fst: b!.fst,
+                snd: null, trd: null
+            },
+            {
+                parent: b!.parent,
+                fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
+                snd: null, trd: null   
+            }];
+            b = x < b!.parent!.fst[0] ? b!.parent!.fst[1] : b!.parent!.fst[2];
+        //split up from the middle
+        }else{
+            b!.parent!.fst[2] = {
+                parent: b!.parent,
+                fst: b!.fst,
+                snd: null, trd: null
+            };
+            b!.parent!.trd = b!.parent!.snd;
+            b!.parent!.snd = [ b!.snd![0], {
+                parent: b!.parent,
+                fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
+                snd: null, trd: null
+            }];
+            b = x < b!.parent!.snd[0] ? b!.parent!.fst[2] : b!.parent!.snd[1];
+        }
+        return b;
+    }
+
+    getTree(): Branch {
+        return this.tree;
+    }
+
     search(x: number): number | null {
         return 0;
     }
@@ -152,6 +230,11 @@ class Tree {
 
     print(): void{
         console.log(this);
+    }
+
+    compile(): string {
+        let err = this.docHandler.compileTreeToDOM(this);
+        return err;
     }
 
     update(): void {

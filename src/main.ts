@@ -9,7 +9,6 @@ const resize: (() => void) = (): void => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    tree.update();
     drawFrame();
 };
 
@@ -20,19 +19,52 @@ const background: (() => void) = (): void => {
 
 const drawFrame: (() => void) = (): void => {
     background();
+    tree.update();
     tree.draw(ctx);
+}
+
+const recompile: (() => void) = (): void => {
+    tree.compile();
+    setTimeout(() => {
+        tree.update();
+        tree.draw(ctx);
+    }, 100);
 }
 
 window.addEventListener('resize', resize, false);
 
 resize();
 
+tree.insert(6);
+tree.insert(5);
+tree.insert(3);
+tree.insert(2);
+tree.insert(1);
+tree.insert(4);
+tree.print();
+recompile();
 
-ctx.fillStyle = "#fff";
-let rect = (document.getElementById("0") as HTMLElement).getBoundingClientRect();
-ctx.fillRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
 
-console.log(rect.top, rect.bottom, rect.left, rect.right);
+// tree.insert(0);
+// tree.print();
+// tree.insert(-1);
+// tree.print();
+// tree.insert(7);
+// tree.print();
+// tree.insert(5);
+// tree.print();
+// tree.insert(6);
+// tree.print();
+// tree.insert(0);
+// tree.print();
+// tree.insert(-1);
+// // tree.print();
+// tree.insert(7);
+// tree.print();
+// tree.insert(8);
+// tree.print();
+
+
 
 // const mainLoop: (() => void) = () => {
 
