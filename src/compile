@@ -1,0 +1,1 @@
+tsc -out ../src_compiled/main.js document_handler.ts tree.ts main.ts

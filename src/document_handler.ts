@@ -41,7 +41,7 @@ class DocumentHandler {
         if(nodes === undefined) { return; }
         const treesArray = Array.prototype.slice.call(nodes.children);
         treesArray.map((tree) => {
-            console.log(tree.children);
+            //console.log(tree.children);
             if(tree.children[0] !== undefined) {
                 const end: Pair = this.nodePositionOnId((tree.children[0] as HTMLElement).id);
                 this.View.push([start, end]);
