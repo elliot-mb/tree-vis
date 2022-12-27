@@ -24,11 +24,12 @@ class DocumentHandler {
     //     this.DOMTreeBox.appendChild(this.DOMTree);
     // }
 
-    compileTreeToDOM(t: Tree): string { //returns its error 
+    compileTreeToDOM(t: Tree): string { //returns its error
+        const tree = t.getTree(); 
         const DOMTree = this.DOMTreeBox;
         const page: HTMLBox = { HTML: `<div id="tree" class="tree">` };
         this.headerID = 0;
-        if(t !== null) this.treeToDOM(t.getTree(), page);
+        if(tree !== null) this.treeToDOM(tree, page);
         page.HTML += `</div>`;
         DOMTree.innerHTML = page.HTML;
         return "";
@@ -70,7 +71,9 @@ class DocumentHandler {
     }
 
     private nodeBoxOnId(str: string): Box {
-        return (document.getElementById(str) as HTMLElement).getBoundingClientRect();
+        let elem = document.getElementById(str);
+        if(elem === null) { return new DOMRectReadOnly(-1, -1, -1, -1); }
+        return elem.getBoundingClientRect();
     }
 
     connectTree(): void{

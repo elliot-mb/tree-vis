@@ -45,11 +45,11 @@ class Tree {
     }
 
     private insertHere(x: number, parent: Branch, b: Branch): void {
-        // console.log(`inserting ${x} at`, b);
+
         if (isFourNode(b)) { //split
-            console.log("splitting a 4 node");
+      
             if(parent === null) { //we are splitting the root
-                console.log("splitting the root");
+             
                 const rootVal: number = b!.snd![0];
                 const newRoot: Branch = {
                     parent: null,
@@ -72,12 +72,12 @@ class Tree {
             }
             // not the root, just a normal fournode
             if(isThreeNode(parent)){
-                console.log("A threenode above");
+               
                 b = this.splitParentThreeNode(parent, b, x);
                 this.insertHere(x, parent, b); 
             }
             if(isTwoNode(parent)){
-                console.log("A twonode above");
+               
                 b = this.splitParentTwoNode(parent, b);
                 this.insertHere(x, parent, b); 
             }
@@ -85,7 +85,7 @@ class Tree {
         }
 
         if (isThreeNode(b)) {
-            if(x < b!.fst[0]) {
+            if(x <= b!.fst[0]) {
                 if(b!.fst[1] !== null) { //recurse left
                     this.insertHere(x, b, b!.fst[1]);
                     return;
@@ -118,7 +118,7 @@ class Tree {
             //new bottom-level fournode
         }
         if (isTwoNode(b)) {
-            if(x < b!.fst[0]){
+            if(x <= b!.fst[0]){
                 if(b!.fst[1] !== null){
                     this.insertHere(x, b, b!.fst[1]); //left
                     return
@@ -139,7 +139,7 @@ class Tree {
         //if we're on the right of parent
         const prt = p!;
         if(prt.fst[0] <= b!.fst[0]){
-            console.log("hi!");
+            
             prt.fst![2] = {
                 parent: prt,
                 fst: b!.fst,
@@ -153,7 +153,7 @@ class Tree {
             b = prt.snd[1];
         }else{
         //we're on the left side
-            console.log("bye!");
+         
             prt.snd = [prt.fst[0], prt.fst[2]];
             prt.fst = [
                 b!.snd![0],
@@ -177,7 +177,7 @@ class Tree {
         //split up from the right 
         const prt = p!;
         if(prt.snd![0] <= b!.fst[0]){
-            console.log("sigh!");
+         
             prt.snd![1] = { //snd is defined because we're there now
                 parent: prt,
                 fst: b!.fst,
@@ -191,7 +191,7 @@ class Tree {
             b = prt.trd[1];
         //split up from the left
         }else if(prt.fst[0] >= b!.trd![0]){
-            console.log("cry!");
+       
             prt.trd = prt.snd;
             prt.snd = [prt.fst[0], prt.fst[2]];
             prt.fst = [b!.snd![0], {
