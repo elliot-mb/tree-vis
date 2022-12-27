@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>2-3-4 tree</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <canvas id="canvas" height="0" width="0"></canvas>
+
+        <br></br>
+        <div id="tree-box">
+            <div id="tree" class="tree">
+                <h1 id="0">0</h1>
+                <div class="nodes">
+                    <div class="tree">
+                        <h1 id="00">2</h1>
+                        <div class="nodes">
+                            <div class="tree">
+                                <h1 id="000">-1, 2</h1>
+                            </div>
+                            <div class="tree">
+                                <h1 id="001">1</h1>
+                            </div>
+                            <div class="tree">
+                                <h1 id="003">1</h1>
+                            </div>
+                            <div class="tree">
+                                <h1 id="002">1</h1>
+                                <div class="nodes">
+                                    <div class="tree">
+                                        <h1 id="0020">1, 3, 4</h1>
+                                    </div>
+                                    <div class="tree">
+                                        <h1 id="0021">1, 3, 4</h1>
+                                    </div>
+                                    <div class="tree">
+                                        <h1 id="0022">1</h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tree">
+                        <h1 id="01">4</h1>
+                        <div class="nodes">
+                            <div class="tree">
+                                <h1 id="010">3</h1>
+                                <div class="nodes">
+                                    <div class="tree">
+                                        <h1 id="0100">3</h1>
+                                    </div>
+                                    <div class="tree">
+                                        <h1 id="0101">6,6</h1>
+                                    </div>
+                                    <div class="tree">
+                                        <h1 id="0102">3</h1>
+                                        <div class="nodes">
+                                            <div class="tree">
+                                                <h1 id="01020">3</h1>
+                                            </div>
+                                            <div class="tree">
+                                                <h1 id="01021">6,2</h1>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tree">
+                                <h1 id="011">6,2</h1>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="src_compiled/main.js"></script>
+    </body>
+</html>
