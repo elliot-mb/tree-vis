@@ -348,18 +348,17 @@ var ctx = canvas.getContext("2d");
 var tree = new Tree();
 var btnHandler = new ButtonHandler("insert-button");
 btnHandler.listen(function () {
-    var _a;
     var entry = document.getElementById("new-node-entry");
     if (entry === null) {
         return;
     }
     var entryText = entry.textContent === null ? "" : entry.value;
-    console.log(entryText);
-    var r = /-?[0-9]+/;
-    var numberPlain = (_a = r.exec(entryText)) === null || _a === void 0 ? void 0 : _a.toString();
-    if (numberPlain === undefined) {
+    var r = /-?[0-9]+(\.[0-9]*[1-9]+)?/;
+    var matches = r.exec(entryText);
+    if (matches === null) {
         return;
     }
+    var numberPlain = matches[0].toString();
     var value = +numberPlain;
     tree.insert(value);
     recompile();
@@ -394,9 +393,3 @@ setTimeout(function () {
 // }
 tree.print();
 recompile();
-// const mainLoop: (() => void) = () => {
-//     background();
-//     tree.draw(ctx);
-//     requestAnimationFrame(mainLoop);
-// }
-// mainLoop();

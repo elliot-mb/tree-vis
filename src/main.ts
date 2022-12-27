@@ -7,11 +7,13 @@ btnHandler.listen(() => {
     let entry: HTMLInputElement | null = document.getElementById("new-node-entry") as HTMLInputElement;
     if(entry === null) { return; }
     let entryText: string = entry.textContent === null ? "" : entry.value;
-    console.log(entryText);
-    let r: RegExp = /-?[0-9]+/;
-    let numberPlain: string | undefined = r.exec(entryText)?.toString();
-    if(numberPlain === undefined) { return; }
+
+    let r: RegExp = /-?[0-9]+(\.[0-9]*[1-9]+)?/;
+    let matches = r.exec(entryText);
+    if(matches === null) { return; }
+    let numberPlain: string = matches[0].toString();
     let value: number = +numberPlain;
+
     tree.insert(value);
     recompile();
 });
@@ -53,14 +55,3 @@ setTimeout(() => {
 // }
 tree.print();
 recompile();
-
-
-// const mainLoop: (() => void) = () => {
-
-//     background();
-//     tree.draw(ctx);
-
-//     requestAnimationFrame(mainLoop);
-// }
-
-// mainLoop();
