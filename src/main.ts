@@ -9,7 +9,6 @@ const resize: (() => void) = (): void => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    tree.update();
     drawFrame();
 };
 
@@ -20,7 +19,16 @@ const background: (() => void) = (): void => {
 
 const drawFrame: (() => void) = (): void => {
     background();
+    tree.update();
     tree.draw(ctx);
+}
+
+const recompile: (() => void) = (): void => {
+    tree.compile();
+    setTimeout(() => {
+        tree.update();
+        tree.draw(ctx);
+    }, 100);
 }
 
 window.addEventListener('resize', resize, false);
@@ -29,14 +37,14 @@ resize();
 
 tree.insert(6);
 tree.insert(5);
-tree.insert(4);
 tree.insert(3);
 tree.insert(2);
 tree.insert(1);
-tree.insert(4.1)
-tree.insert(4.2);
-tree.insert(4.3);
+tree.insert(4);
 tree.print();
+recompile();
+
+
 // tree.insert(0);
 // tree.print();
 // tree.insert(-1);

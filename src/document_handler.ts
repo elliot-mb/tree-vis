@@ -1,24 +1,61 @@
+type HTMLBox = { 
+    HTML: string
+};
+
 class DocumentHandler { 
-    private DOMTree: HTMLElement;
     private DOMTreeBox: HTMLElement = document.getElementById(TREEBOX_ID)!;
+    private headerID = 0;
     private View: Line[];
 
     constructor(){
-        this.DOMTree = this.getDOMTree();
+
     }
 
     getDOMTree(): HTMLElement{
         return document.getElementById(TREE_ID)!;
     }
 
-    setDOMTree(): void{
-        let tree = this.getDOMTree();
-        tree.remove();
-        this.DOMTreeBox.appendChild(this.DOMTree);
+    // setDOMTree(): void{
+    //     let tree = this.getDOMTree();
+    //     tree.remove();
+    //     this.DOMTreeBox.appendChild(this.DOMTree);
+    // }
+
+    compileTreeToDOM(t: Tree): string { //returns its error 
+        const DOMTree = this.DOMTreeBox;
+        const page: HTMLBox = { HTML: `<div id="tree" class="tree">` };
+        this.headerID = 0;
+        if(t !== null) this.treeToDOM(t.getTree(), page);
+        page.HTML += `</div>`;
+        DOMTree.innerHTML = page.HTML;
+        return "";
     }
 
-    print(): void{
-        console.log(this.DOMTree);
+    private treeToDOM(t: Branch, page: HTMLBox){
+        let header = `<h1 id="${this.headerID}">`;
+        const tree = t!;
+        header += tree.fst !== null ? `${tree.fst[0]}` : ""; 
+        header += tree.snd !== null ? `, ${tree.snd[0]}` : "";
+        header += tree.trd !== null ? `, ${tree.trd[0]}</h1>` : "</h1>";
+        this.headerID++;
+        page.HTML += header;
+        
+        page.HTML += `<div class="nodes">`;
+        let subTrees: (Branch)[] = [ //possible subtrees
+            tree.fst[1], 
+            tree.fst[2], 
+            tree.snd !== null ? tree.snd[1] : null, 
+            tree.trd !== null ? tree.trd[1] : null
+        ];
+        subTrees.map((subTree) => {
+            if(subTree !== null) {
+                page.HTML += `<div class="tree">`
+                this.treeToDOM(subTree, page);
+                page.HTML += `</div>`
+            }
+        });
+        page.HTML += `</div>`;
+        console.log(page.HTML);
     }
 
     private nodePositionOnId(str: string): Pair {
@@ -32,7 +69,7 @@ class DocumentHandler {
 
     connectTree(): void{
         this.View = [];
-        this.connect(this.DOMTree, "0"); //root is a
+        this.connect(this.getDOMTree(), "0"); //root is a
     }
 
     private connect(elem: HTMLElement, id: string): void{
@@ -51,7 +88,7 @@ class DocumentHandler {
     }
 
     draw(ctx: CanvasRenderingContext2D): void{
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 4;
         ctx.strokeStyle = '#000';
         this.View.map(line => {
             ctx.beginPath();

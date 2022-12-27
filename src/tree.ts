@@ -216,6 +216,10 @@ class Tree {
         return b;
     }
 
+    getTree(): Branch {
+        return this.tree;
+    }
+
     search(x: number): number | null {
         return 0;
     }
@@ -226,6 +230,11 @@ class Tree {
 
     print(): void{
         console.log(this);
+    }
+
+    compile(): string {
+        let err = this.docHandler.compileTreeToDOM(this);
+        return err;
     }
 
     update(): void {
