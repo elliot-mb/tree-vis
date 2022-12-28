@@ -251,7 +251,7 @@ var Tree = /** @class */ (function () {
     Tree.prototype.splitParentTwoNode = function (p, b, x) {
         //if we're on the right of parent
         var prt = p;
-        if (prt.fst[0] < b.fst[0]) {
+        if (prt.fst[0] < b.fst[0]) { //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
             prt.fst[2] = {
                 parent: prt,
                 fst: b.fst,
@@ -287,7 +287,7 @@ var Tree = /** @class */ (function () {
     Tree.prototype.splitParentThreeNode = function (p, b, x) {
         //split up from the right 
         var prt = p;
-        if (prt.snd[0] < b.fst[0]) {
+        if (prt.snd[0] < b.fst[0]) { //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
             prt.snd[1] = {
                 parent: prt,
                 fst: b.fst,
@@ -301,7 +301,7 @@ var Tree = /** @class */ (function () {
             b = x <= prt.trd[0] ? prt.snd[1] : prt.trd[1];
             //split up from the left
         }
-        else if (prt.fst[0] >= b.trd[0]) {
+        else if (prt.fst[0] >= b.trd[0]) { //equal numbers are caught here as they are known to be on the left
             prt.trd = prt.snd;
             prt.snd = [prt.fst[0], prt.fst[2]];
             prt.fst = [b.snd[0], {
