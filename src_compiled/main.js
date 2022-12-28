@@ -153,32 +153,15 @@ var Tree = /** @class */ (function () {
     Tree.prototype.insertHere = function (x, parent, b) {
         if (isFourNode(b)) { //split
             if (parent === null) { //we are splitting the root
-                var rootVal = b.snd[0];
-                var newRoot = {
-                    parent: null,
-                    fst: [rootVal, null, null],
-                    snd: null, trd: null
-                };
-                newRoot.fst[1] = {
-                    parent: newRoot,
-                    fst: b.fst,
-                    snd: null, trd: null
-                };
-                newRoot.fst[2] = {
-                    parent: newRoot,
-                    fst: [b.trd[0], b.snd[1], b.trd[1]],
-                    snd: null, trd: null
-                };
-                this.tree = newRoot;
+                this.splitRoot(b);
                 this.insertHere(x, null, this.tree); //go up and then back down
-                return;
+                // not the root, just a normal fournode
             }
-            // not the root, just a normal fournode
-            if (isThreeNode(parent)) {
+            else if (isThreeNode(parent)) {
                 b = this.splitParentThreeNode(parent, b, x);
                 this.insertHere(x, parent, b);
             }
-            if (isTwoNode(parent)) {
+            else if (isTwoNode(parent)) {
                 b = this.splitParentTwoNode(parent, b, x);
                 this.insertHere(x, parent, b);
             }
@@ -190,32 +173,39 @@ var Tree = /** @class */ (function () {
                     this.insertHere(x, b, b.fst[1]);
                     return;
                 }
-                //else slide values along
-                b.trd = [b.snd[0], null];
-                b.snd = [b.fst[0], null];
-                b.fst = [x, null, null];
-                //new bottom-level fournode
-                return;
+                else {
+                    //else slide values along
+                    b.trd = [b.snd[0], null];
+                    b.snd = [b.fst[0], null];
+                    b.fst = [x, null, null];
+                    //new bottom-level fournode
+                    return;
+                }
             }
-            if (x > b.fst[0] && x < b.snd[0]) {
+            if (x > b.fst[0] && x <= b.snd[0]) {
                 if (b.snd[1] !== null) { //recurse on middle
                     this.insertHere(x, b, b.fst[2]);
                     return;
                 }
-                //else put x in the middle
-                b.trd = [b.snd[0], null];
-                b.snd = [x, null];
-                //new bottom-level fournode
-                return;
+                else {
+                    //else put x in the middle
+                    b.trd = [b.snd[0], null];
+                    b.snd = [x, null];
+                    //new bottom-level fournode
+                    return;
+                }
             }
             //larger than both
             if (b.snd[1] !== null) {
                 this.insertHere(x, b, b.snd[1]);
                 return;
             }
-            //place x at the end
-            b.trd = [x, null];
-            //new bottom-level fournode
+            else {
+                //place x at the end
+                b.trd = [x, null];
+                return;
+                //new bottom-level fournode
+            }
         }
         if (isTwoNode(b)) {
             if (x <= b.fst[0]) {
@@ -223,21 +213,45 @@ var Tree = /** @class */ (function () {
                     this.insertHere(x, b, b.fst[1]); //left
                     return;
                 }
-                b.snd = [b.fst[0], null];
-                b.fst = [x, null, null];
-                return;
+                else {
+                    b.snd = [b.fst[0], null];
+                    b.fst = [x, null, null];
+                    return;
+                }
             }
             if (b.fst[2] !== null) {
                 this.insertHere(x, b, b.fst[2]);
                 return;
             }
-            b.snd = [x, null];
+            else {
+                b.snd = [x, null];
+                return;
+            }
         }
+    };
+    Tree.prototype.splitRoot = function (b) {
+        var rootVal = b.snd[0];
+        var newRoot = {
+            parent: null,
+            fst: [rootVal, null, null],
+            snd: null, trd: null
+        };
+        newRoot.fst[1] = {
+            parent: newRoot,
+            fst: b.fst,
+            snd: null, trd: null
+        };
+        newRoot.fst[2] = {
+            parent: newRoot,
+            fst: [b.trd[0], b.snd[1], b.trd[1]],
+            snd: null, trd: null
+        };
+        this.tree = newRoot;
     };
     Tree.prototype.splitParentTwoNode = function (p, b, x) {
         //if we're on the right of parent
         var prt = p;
-        if (prt.fst[0] <= b.fst[0]) {
+        if (prt.fst[0] < b.fst[0]) { //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
             prt.fst[2] = {
                 parent: prt,
                 fst: b.fst,
@@ -248,7 +262,7 @@ var Tree = /** @class */ (function () {
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = x < prt.snd[0] ? prt.fst[2] : prt.snd[1];
+            b = x <= prt.snd[0] ? prt.fst[2] : prt.snd[1];
         }
         else {
             //we're on the left side
@@ -266,14 +280,14 @@ var Tree = /** @class */ (function () {
                     snd: null, trd: null
                 }
             ];
-            b = x < prt.fst[0] ? prt.fst[1] : prt.fst[2];
+            b = x <= prt.fst[0] ? prt.fst[1] : prt.fst[2];
         }
         return b;
     };
     Tree.prototype.splitParentThreeNode = function (p, b, x) {
         //split up from the right 
         var prt = p;
-        if (prt.snd[0] <= b.fst[0]) {
+        if (prt.snd[0] < b.fst[0]) { //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
             prt.snd[1] = {
                 parent: prt,
                 fst: b.fst,
@@ -284,10 +298,10 @@ var Tree = /** @class */ (function () {
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = x < prt.trd[0] ? prt.snd[1] : prt.trd[1];
+            b = x <= prt.trd[0] ? prt.snd[1] : prt.trd[1];
             //split up from the left
         }
-        else if (prt.fst[0] >= b.trd[0]) {
+        else if (prt.fst[0] >= b.trd[0]) { //equal numbers are caught here as they are known to be on the left
             prt.trd = prt.snd;
             prt.snd = [prt.fst[0], prt.fst[2]];
             prt.fst = [b.snd[0], {
@@ -300,7 +314,7 @@ var Tree = /** @class */ (function () {
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = x < prt.fst[0] ? prt.fst[1] : prt.fst[2];
+            b = x <= prt.fst[0] ? prt.fst[1] : prt.fst[2];
             //split up from the middle
         }
         else {
@@ -315,7 +329,7 @@ var Tree = /** @class */ (function () {
                     fst: [b.trd[0], b.snd[1], b.trd[1]],
                     snd: null, trd: null
                 }];
-            b = x < prt.snd[0] ? prt.fst[2] : prt.snd[1];
+            b = x <= prt.snd[0] ? prt.fst[2] : prt.snd[1];
         }
         return b;
     };
