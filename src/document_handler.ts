@@ -29,30 +29,21 @@ class DocumentHandler {
         const DOMTree = this.DOMTreeBox;
         const page: HTMLBox = { HTML: `<div id="tree" class="tree">` };
         this.headerID = 0;
-        if(tree !== null) this.treeToDOM(tree, page);
+        if(tree.values.length !== 0) this.treeToDOM(tree, page);
         page.HTML += `</div>`;
         DOMTree.innerHTML = page.HTML;
         return "";
     }
 
-    private treeToDOM(t: Branch, page: HTMLBox){
+    private treeToDOM(t: Vertex, page: HTMLBox){
         let header = `<h1 class="element" id="${this.headerID}">`;
-        const tree = t!;
-        header += tree.fst !== null ? `${tree.fst[0]}` : ""; 
-        header += tree.snd !== null ? `, ${tree.snd[0]}` : "";
-        header += tree.trd !== null ? `, ${tree.trd[0]}</h1>` : "</h1>";
+        t.values.map((val) => header += `${val}  `);
         this.headerID++;
-        page.HTML += header;
+        page.HTML += header.trim() + "</h1>";
         
         page.HTML += `<div class="nodes">`;
-        let subTrees: (Branch)[] = [ //possible subtrees
-            tree.fst[1], 
-            tree.fst[2], 
-            tree.snd !== null ? tree.snd[1] : null, 
-            tree.trd !== null ? tree.trd[1] : null
-        ];
-        subTrees.map((subTree) => {
-            if(subTree !== null) {
+        t.nodes.map((subTree) => {
+            if(subTree !== undefined) {
                 page.HTML += `<div class="tree">`
                 this.treeToDOM(subTree, page);
                 page.HTML += `</div>`

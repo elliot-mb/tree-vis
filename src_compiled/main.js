@@ -31,7 +31,7 @@ var DocumentHandler = /** @class */ (function () {
         var DOMTree = this.DOMTreeBox;
         var page = { HTML: "<div id=\"tree\" class=\"tree\">" };
         this.headerID = 0;
-        if (tree !== null)
+        if (tree.values.length !== 0)
             this.treeToDOM(tree, page);
         page.HTML += "</div>";
         DOMTree.innerHTML = page.HTML;
@@ -40,21 +40,12 @@ var DocumentHandler = /** @class */ (function () {
     DocumentHandler.prototype.treeToDOM = function (t, page) {
         var _this = this;
         var header = "<h1 class=\"element\" id=\"".concat(this.headerID, "\">");
-        var tree = t;
-        header += tree.fst !== null ? "".concat(tree.fst[0]) : "";
-        header += tree.snd !== null ? ", ".concat(tree.snd[0]) : "";
-        header += tree.trd !== null ? ", ".concat(tree.trd[0], "</h1>") : "</h1>";
+        t.values.map(function (val) { return header += "".concat(val, "  "); });
         this.headerID++;
-        page.HTML += header;
+        page.HTML += header.trim() + "</h1>";
         page.HTML += "<div class=\"nodes\">";
-        var subTrees = [
-            tree.fst[1],
-            tree.fst[2],
-            tree.snd !== null ? tree.snd[1] : null,
-            tree.trd !== null ? tree.trd[1] : null
-        ];
-        subTrees.map(function (subTree) {
-            if (subTree !== null) {
+        t.nodes.map(function (subTree) {
+            if (subTree !== undefined) {
                 page.HTML += "<div class=\"tree\">";
                 _this.treeToDOM(subTree, page);
                 page.HTML += "</div>";
@@ -123,215 +114,111 @@ var DocumentHandler = /** @class */ (function () {
     };
     return DocumentHandler;
 }());
-var isTwoNode = function (b) {
-    return b !== null && b.fst !== null && b.snd === null && b.trd === null;
-};
-var isThreeNode = function (b) {
-    return b !== null && !isTwoNode(b) && b.snd !== null && b.trd === null;
-};
-var isFourNode = function (b) {
-    return b !== null && !isTwoNode(b) && !isThreeNode(b);
+// const isTwoNode = (b: Branch): boolean => { 
+//     return b !== null && b.fst !== null && b.snd === null && b.trd === null;
+// }
+// const isThreeNode = (b: Branch): boolean => {
+//     return b !== null && !isTwoNode(b) && b.snd !== null && b.trd === null;
+// }
+var isFourNode = function (node) {
+    return node.values.length === 3;
 };
 var TREEBOX_ID = "tree-box";
 var TREE_ID = "tree";
 var Tree = /** @class */ (function () {
     function Tree() {
         this.docHandler = new DocumentHandler();
-        this.tree = null;
+        this.tree = { values: [], nodes: [] };
     }
     Tree.prototype.insert = function (x) {
-        if (this.tree === null) {
-            this.tree = {
-                parent: null,
-                fst: [x, null, null],
-                snd: null, trd: null
+        if (isFourNode(this.tree)) {
+            var newRoot = {
+                values: [],
+                nodes: [this.tree]
             };
-            return;
+            this.split(0, newRoot);
+            this.tree = newRoot;
+            console.log(this.tree);
         }
-        this.insertHere(x, null, this.tree);
+        this.insertIn(x, this.tree);
     };
-    Tree.prototype.insertHere = function (x, parent, b) {
-        if (isFourNode(b)) { //split
-            if (parent === null) { //we are splitting the root
-                this.splitRoot(b);
-                this.insertHere(x, null, this.tree); //go up and then back down
-                // not the root, just a normal fournode
-            }
-            else if (isThreeNode(parent)) {
-                b = this.splitParentThreeNode(parent, b, x);
-                this.insertHere(x, parent, b);
-            }
-            else if (isTwoNode(parent)) {
-                b = this.splitParentTwoNode(parent, b, x);
-                this.insertHere(x, parent, b);
-            }
-            return;
-        }
-        if (isThreeNode(b)) {
-            if (x <= b.fst[0]) {
-                if (b.fst[1] !== null) { //recurse left
-                    this.insertHere(x, b, b.fst[1]);
-                    return;
-                }
-                else {
-                    //else slide values along
-                    b.trd = [b.snd[0], null];
-                    b.snd = [b.fst[0], null];
-                    b.fst = [x, null, null];
-                    //new bottom-level fournode
-                    return;
-                }
-            }
-            if (x > b.fst[0] && x <= b.snd[0]) {
-                if (b.snd[1] !== null) { //recurse on middle
-                    this.insertHere(x, b, b.fst[2]);
-                    return;
-                }
-                else {
-                    //else put x in the middle
-                    b.trd = [b.snd[0], null];
-                    b.snd = [x, null];
-                    //new bottom-level fournode
-                    return;
-                }
-            }
-            //larger than both
-            if (b.snd[1] !== null) {
-                this.insertHere(x, b, b.snd[1]);
-                return;
-            }
-            else {
-                //place x at the end
-                b.trd = [x, null];
-                return;
-                //new bottom-level fournode
-            }
-        }
-        if (isTwoNode(b)) {
-            if (x <= b.fst[0]) {
-                if (b.fst[1] !== null) {
-                    this.insertHere(x, b, b.fst[1]); //left
-                    return;
-                }
-                else {
-                    b.snd = [b.fst[0], null];
-                    b.fst = [x, null, null];
-                    return;
-                }
-            }
-            if (b.fst[2] !== null) {
-                this.insertHere(x, b, b.fst[2]);
-                return;
-            }
-            else {
-                b.snd = [x, null];
-                return;
-            }
-        }
+    Tree.prototype.rangeCheckValues = function (i, node) {
+        if (i >= node.values.length)
+            throw Error("Error: provided a node which was too small to get the ".concat(i, "th value"));
     };
-    Tree.prototype.splitRoot = function (b) {
-        var rootVal = b.snd[0];
-        var newRoot = {
-            parent: null,
-            fst: [rootVal, null, null],
-            snd: null, trd: null
-        };
-        newRoot.fst[1] = {
-            parent: newRoot,
-            fst: b.fst,
-            snd: null, trd: null
-        };
-        newRoot.fst[2] = {
-            parent: newRoot,
-            fst: [b.trd[0], b.snd[1], b.trd[1]],
-            snd: null, trd: null
-        };
-        this.tree = newRoot;
+    Tree.prototype.rangeCheckNodes = function (i, node) {
+        if (i >= node.nodes.length)
+            throw Error("Error: provided a node which was too small to get the ".concat(i, "th node"));
     };
-    Tree.prototype.splitParentTwoNode = function (p, b, x) {
-        //if we're on the right of parent
-        var prt = p;
-        if (prt.fst[0] < b.fst[0]) { //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
-            prt.fst[2] = {
-                parent: prt,
-                fst: b.fst,
-                snd: null, trd: null
-            };
-            prt.snd = [b.snd[0], {
-                    parent: prt,
-                    fst: [b.trd[0], b.snd[1], b.trd[1]],
-                    snd: null, trd: null
-                }];
-            b = x <= prt.snd[0] ? prt.fst[2] : prt.snd[1];
+    Tree.prototype.insertIn = function (x, node) {
+        var nodeType = node.nodes.length; //two/three/four node
+        for (var i = 0; i < node.values.length; i++) {
+            var val = node.values[i];
+            var leftChild = node.nodes[i];
+            if (x <= val && node.nodes[i] === undefined) {
+                node.values.splice(i, 0, x);
+                return;
+            }
+            else if (x <= val) {
+                //check if the subsequent node is a fournode, split it if so
+                var offset = 0;
+                if (isFourNode(leftChild)) {
+                    var newVal = this.split(i, node);
+                    if (x > newVal) {
+                        offset = 1;
+                    }
+                }
+                this.insertIn(x, node.nodes[i + offset]);
+                return;
+            }
+        }
+        var lastNode = node.nodes[nodeType - 1];
+        if (lastNode === undefined) {
+            node.values.push(x);
         }
         else {
-            //we're on the left side
-            prt.snd = [prt.fst[0], prt.fst[2]];
-            prt.fst = [
-                b.snd[0],
-                {
-                    parent: prt,
-                    fst: b.fst,
-                    snd: null, trd: null
-                },
-                {
-                    parent: prt,
-                    fst: [b.trd[0], b.snd[1], b.trd[1]],
-                    snd: null, trd: null
+            //check if the subsequent node is fournode, split it if so 
+            var offset = 0;
+            if (isFourNode(lastNode)) {
+                var newVal = this.split(nodeType - 1, node);
+                if (x > newVal) {
+                    offset = 1;
                 }
-            ];
-            b = x <= prt.fst[0] ? prt.fst[1] : prt.fst[2];
+            }
+            this.insertIn(x, node.nodes[nodeType - 1 + offset]);
         }
-        return b;
     };
-    Tree.prototype.splitParentThreeNode = function (p, b, x) {
-        //split up from the right 
-        var prt = p;
-        if (prt.snd[0] < b.fst[0]) { //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
-            prt.snd[1] = {
-                parent: prt,
-                fst: b.fst,
-                snd: null, trd: null
-            };
-            prt.trd = [b.snd[0], {
-                    parent: prt,
-                    fst: [b.trd[0], b.snd[1], b.trd[1]],
-                    snd: null, trd: null
-                }];
-            b = x <= prt.trd[0] ? prt.snd[1] : prt.trd[1];
-            //split up from the left
+    //splits are done pre-emptively so we only ever go into a split node
+    //this removes the need for vertices to know their parents ;w;
+    //this will split the ith node in 'node.nodes', and mutate 'node'. The node passed in is the **parent** of the node being split 
+    Tree.prototype.split = function (i, node) {
+        //this.rangeCheckValues(i, node);
+        this.rangeCheckNodes(i, node); //if we're splitting the right node, we want to know its index is within our current node
+        var toSplit = node.nodes[i];
+        if (!isFourNode(toSplit)) {
+            console.log(toSplit);
+            throw Error("Error: split attempted on non-fournode");
         }
-        else if (prt.fst[0] >= b.trd[0]) { //equal numbers are caught here as they are known to be on the left
-            prt.trd = prt.snd;
-            prt.snd = [prt.fst[0], prt.fst[2]];
-            prt.fst = [b.snd[0], {
-                    parent: prt,
-                    fst: b.fst,
-                    snd: null, trd: null
-                },
-                {
-                    parent: prt,
-                    fst: [b.trd[0], b.snd[1], b.trd[1]],
-                    snd: null, trd: null
-                }];
-            b = x <= prt.fst[0] ? prt.fst[1] : prt.fst[2];
-            //split up from the middle
-        }
-        else {
-            prt.fst[2] = {
-                parent: prt,
-                fst: b.fst,
-                snd: null, trd: null
-            };
-            prt.trd = prt.snd;
-            prt.snd = [b.snd[0], {
-                    parent: prt,
-                    fst: [b.trd[0], b.snd[1], b.trd[1]],
-                    snd: null, trd: null
-                }];
-            b = x <= prt.snd[0] ? prt.fst[2] : prt.snd[1];
-        }
-        return b;
+        node.nodes.splice(i, 1);
+        var middleValue = toSplit.values[1];
+        node.values.splice(i, 0, middleValue); //pull up the middle value and put it where it belongs
+        node.nodes.splice(i, 0, this.twoNode(0, toSplit), this.twoNode(2, toSplit)); //variadic insertion of both new twoNodes
+        return middleValue;
+    };
+    Tree.prototype.twoNode = function (i, node) {
+        //console.log(node);
+        this.rangeCheckValues(i, node);
+        var left = node.nodes[i];
+        var right = node.nodes[i + 1];
+        var children = [];
+        if (left !== undefined)
+            children.push(left);
+        if (right !== undefined)
+            children.push(right);
+        return {
+            values: [node.values[i]],
+            nodes: children
+        };
     };
     Tree.prototype.getTree = function () {
         return this.tree;
