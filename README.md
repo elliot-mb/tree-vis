@@ -1,4 +1,4 @@
-# 2-3-4 Tree visualiser
+# 2-3-4 Tree visualiser [(Deployed)](https://elliotmb.dev/tree-vis/)
 A visual learning tool providing an interactive 2-3-4 tree (B-Tree of order 4) in the browser.
 
 Numbers may be inserted into the tree in real time. I plan to add search and deletion next. 
