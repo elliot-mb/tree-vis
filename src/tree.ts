@@ -37,7 +37,6 @@ class Tree {
                 nodes: [this.tree]
             };
             this.split(0, newRoot);
-            newRoot.nodes.pop();
             this.tree = newRoot;
             console.log(this.tree);
         }
@@ -66,7 +65,7 @@ class Tree {
                 let offset = 0;
                 if(isFourNode(leftChild)) { 
                     const newVal: number = this.split(i, node); 
-                    if(val >= newVal) { offset = 1; }
+                    if(x > newVal) { offset = 1; }
                 } 
                 this.insertIn(x, node.nodes[i + offset]);
                 return;
@@ -77,11 +76,10 @@ class Tree {
             node.values.push(x);
         }else{
             //check if the subsequent node is fournode, split it if so 
-            const val: number = node.values[nodeType - 2];
             let offset: number = 0;
             if(isFourNode(lastNode)) { 
                 const newVal: number = this.split(nodeType - 1, node); 
-                if(val >= newVal) { offset = 1; }
+                if(x > newVal) { offset = 1; }
             }
             this.insertIn(x, node.nodes[nodeType - 1 + offset]);
         }
@@ -100,9 +98,12 @@ class Tree {
             throw Error("Error: split attempted on non-fournode");
         }
 
+        node.nodes.splice(i, 1);
+
         const middleValue: number = toSplit.values[1];
         node.values.splice(i, 0, middleValue); //pull up the middle value and put it where it belongs
         node.nodes.splice(i, 0, this.twoNode(0, toSplit), this.twoNode(2, toSplit)); //variadic insertion of both new twoNodes
+
 
         return middleValue;
     }
