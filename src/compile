@@ -1,1 +1,1 @@
-tsc -out ../src_compiled/main.js document_handler.ts tree.ts main.ts
+tsc -out ../src_compiled/main.js button_handler.ts document_handler.ts tree.ts main.ts

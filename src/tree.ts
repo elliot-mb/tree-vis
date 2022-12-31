@@ -1,20 +1,18 @@
-type Branch = {
-    parent: Branch | null //nullable if root
-    fst: [number, Branch, Branch],
-    snd: [number, Branch] | null,
-    trd: [number, Branch] | null
-} | null; // a Branch may have null children
+type Vertex = {
+    values: number[], // values[i] has left and right children nodes[i] and nodes[i+1] 
+    nodes: Vertex[]
+}; 
 
-const isTwoNode = (b: Branch): boolean => { 
-    return b !== null && b.fst !== null && b.snd === null && b.trd === null;
-}
+// const isTwoNode = (b: Branch): boolean => { 
+//     return b !== null && b.fst !== null && b.snd === null && b.trd === null;
+// }
 
-const isThreeNode = (b: Branch): boolean => {
-    return b !== null && !isTwoNode(b) && b.snd !== null && b.trd === null;
-}
+// const isThreeNode = (b: Branch): boolean => {
+//     return b !== null && !isTwoNode(b) && b.snd !== null && b.trd === null;
+// }
 
-const isFourNode = (b: Branch): boolean => {
-    return b !== null && !isTwoNode(b) && !isThreeNode(b);
+const isFourNode = (node: Vertex): boolean => {
+    return node.values.length === 3;
 }
 
 type Pair = [number, number]; //x, y
@@ -26,209 +24,104 @@ const TREE_ID    = "tree";
 
 class Tree {
     private docHandler: DocumentHandler = new DocumentHandler();
-    private tree: Branch = null;
+    private tree: Vertex = {values: [], nodes: []};
 
     constructor(){
 
     }
 
     insert(x: number): void {
-        if(this.tree === null) {
-            this.tree = {
-                parent: null,
-                fst: [x, null, null],
-                snd: null, trd: null
+        if(isFourNode(this.tree)){
+            const newRoot: Vertex = {
+                values: [],
+                nodes: [this.tree]
             };
-            return;
+            this.split(0, newRoot);
+            newRoot.nodes.pop();
+            this.tree = newRoot;
+            console.log(this.tree);
         }
-        this.insertHere(x, null, this.tree);
+        this.insertIn(x, this.tree);
     }
 
-    private insertHere(x: number, parent: Branch, b: Branch): void {
-
-        if (isFourNode(b)) { //split
-            if(parent === null) { //we are splitting the root
-                this.splitRoot(b);
-                this.insertHere(x, null, this.tree); //go up and then back down
-             // not the root, just a normal fournode
-            } else if(isThreeNode(parent)){
-                b = this.splitParentThreeNode(parent, b, x);
-                this.insertHere(x, parent, b); 
-            }else if(isTwoNode(parent)){
-                b = this.splitParentTwoNode(parent, b, x);
-                this.insertHere(x, parent, b); 
-            }
-            return;
-        }
-
-        if (isThreeNode(b)) {
-            if(x <= b!.fst[0]) {
-                if(b!.fst[1] !== null) { //recurse left
-                    this.insertHere(x, b, b!.fst[1]);
-                    return;
-                }else{
-                    //else slide values along
-                    b!.trd = [b!.snd![0], null];
-                    b!.snd = [b!.fst[0], null];
-                    b!.fst = [x, null, null];
-                    //new bottom-level fournode
-                    return;
-                }
-            }
-            if(x > b!.fst[0] && x <= b!.snd![0]){
-                if(b!.snd![1] !== null) { //recurse on middle
-                    this.insertHere(x, b, b!.fst[2]);
-                    return;
-                }else{
-                   //else put x in the middle
-                    b!.trd = [b!.snd![0], null];
-                    b!.snd = [x, null];
-                    //new bottom-level fournode
-                    return; 
-                }
-            }
-            //larger than both
-            if(b!.snd![1] !== null) {
-                this.insertHere(x, b, b!.snd![1]);
-                return;
-            }else{
-                //place x at the end
-                b!.trd = [x, null];
-                return;
-                //new bottom-level fournode
-            }
-            
-        }
-        if (isTwoNode(b)) {
-            if(x <= b!.fst[0]){
-                if(b!.fst[1] !== null){
-                    this.insertHere(x, b, b!.fst[1]); //left
-                    return;
-                }else{
-                    b!.snd = [b!.fst[0], null];
-                    b!.fst = [x, null, null];
-                    return;
-                }
-            }
-            if(b!.fst[2] !== null){
-                this.insertHere(x, b, b!.fst[2]);
-                return;
-            }else{
-                b!.snd = [x, null];
-                return;
-            }
-        }
+    private rangeCheckValues(i: number, node: Vertex): void{
+        if(i >= node.values.length) throw Error(`Error: provided a node which was too small to get the ${i}th value`);
     }
 
-    private splitRoot(b: Branch): void {
-        const rootVal: number = b!.snd![0];
-        const newRoot: Branch = {
-            parent: null,
-            fst: [rootVal, null, null],
-            snd: null, trd: null
-        }
-        newRoot.fst[1] = {
-            parent: newRoot,
-            fst: b!.fst,
-            snd: null, trd: null
-        }
-        newRoot.fst[2] = {
-            parent: newRoot,
-            fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
-            snd: null, trd: null
-        }
-        this.tree = newRoot;
+    private rangeCheckNodes(i: number, node: Vertex): void{
+        if(i >= node.nodes.length) throw Error(`Error: provided a node which was too small to get the ${i}th node`);
     }
 
-    private splitParentTwoNode(p: Branch, b: Branch, x: number): Branch{
-        //if we're on the right of parent
-        const prt = p!;
-        if(prt.fst[0] < b!.fst[0]){ //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
-            
-            prt.fst![2] = {
-                parent: prt,
-                fst: b!.fst,
-                snd: null, trd: null
-            };
-            prt.snd = [b!.snd![0], {
-                parent: prt,
-                fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
-                snd: null, trd: null
-            }];
-            b = x <= prt.snd[0] ? prt.fst[2] : prt.snd[1];
+    private insertIn(x: number,  node: Vertex): void {
+        const nodeType: number = node.nodes.length; //two/three/four node
+
+        for(let i = 0; i < node.values.length; i++) {
+            const val: number = node.values[i];
+            const leftChild: Vertex = node.nodes[i];
+            if(x <= val && node.nodes[i] === undefined){
+                node.values.splice(i, 0, x);
+                return;
+            }else if(x <= val){
+                //check if the subsequent node is a fournode, split it if so
+                let offset = 0;
+                if(isFourNode(leftChild)) { 
+                    const newVal: number = this.split(i, node); 
+                    if(val >= newVal) { offset = 1; }
+                } 
+                this.insertIn(x, node.nodes[i + offset]);
+                return;
+            }
+        }
+        const lastNode = node.nodes[nodeType - 1];
+        if(lastNode === undefined) {
+            node.values.push(x);
         }else{
-        //we're on the left side
-         
-            prt.snd = [prt.fst[0], prt.fst[2]];
-            prt.fst = [
-                b!.snd![0],
-                {
-                    parent: prt,
-                    fst: b!.fst,
-                    snd: null, trd: null
-                },
-                {
-                    parent: prt,
-                    fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
-                    snd: null, trd: null
-                }
-            ];
-            b = x <= prt.fst[0] ? prt.fst[1] : prt.fst[2];
-        }
-        return b;
-    }
-
-    private splitParentThreeNode(p: Branch, b: Branch, x: number): Branch{
-        //split up from the right 
-        const prt = p!;
-        if(prt.snd![0] < b!.fst[0]){ //an equal number is treated as smaller generally, so it must be treated the same way when splitting (equal numbers are assumed to be on the left (see else case))
-         
-            prt.snd![1] = { //snd is defined because we're there now
-                parent: prt,
-                fst: b!.fst,
-                snd: null, trd: null
+            //check if the subsequent node is fournode, split it if so 
+            const val: number = node.values[nodeType - 2];
+            let offset: number = 0;
+            if(isFourNode(lastNode)) { 
+                const newVal: number = this.split(nodeType - 1, node); 
+                if(val >= newVal) { offset = 1; }
             }
-            prt.trd = [b!.snd![0], { 
-                parent: prt,
-                fst: [b!.trd![0], b!.snd![1], b!.trd![1]], 
-                snd: null, trd: null
-            }];
-            b = x <= prt.trd[0] ? prt.snd![1] : prt.trd[1];
-        //split up from the left
-        }else if(prt.fst[0] >= b!.trd![0]){ //equal numbers are caught here as they are known to be on the left
-       
-            prt.trd = prt.snd;
-            prt.snd = [prt.fst[0], prt.fst[2]];
-            prt.fst = [b!.snd![0], {
-                parent: prt,
-                fst: b!.fst,
-                snd: null, trd: null
-            },
-            {
-                parent: prt,
-                fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
-                snd: null, trd: null   
-            }];
-            b = x <= prt.fst[0] ? prt.fst[1] : prt.fst[2];
-        //split up from the middle
-        }else{
-            prt.fst[2] = {
-                parent: prt,
-                fst: b!.fst,
-                snd: null, trd: null
-            };
-            prt.trd = prt.snd;
-            prt.snd = [ b!.snd![0], {
-                parent: prt,
-                fst: [b!.trd![0], b!.snd![1], b!.trd![1]],
-                snd: null, trd: null
-            }];
-            b = x <= prt.snd[0] ? prt.fst[2] : prt.snd[1];
+            this.insertIn(x, node.nodes[nodeType - 1 + offset]);
         }
-        return b;
     }
 
-    getTree(): Branch {
+    //splits are done pre-emptively so we only ever go into a split node
+    //this removes the need for vertices to know their parents ;w;
+    //this will split the ith node in 'node.nodes', and mutate 'node'. The node passed in is the **parent** of the node being split 
+    private split(i: number, node: Vertex): number {
+        //this.rangeCheckValues(i, node);
+        this.rangeCheckNodes(i, node); //if we're splitting the right node, we want to know its index is within our current node
+
+        const toSplit: Vertex = node.nodes[i];
+        if(!isFourNode(toSplit)) { 
+            console.log(toSplit);
+            throw Error("Error: split attempted on non-fournode");
+        }
+
+        const middleValue: number = toSplit.values[1];
+        node.values.splice(i, 0, middleValue); //pull up the middle value and put it where it belongs
+        node.nodes.splice(i, 0, this.twoNode(0, toSplit), this.twoNode(2, toSplit)); //variadic insertion of both new twoNodes
+
+        return middleValue;
+    }
+
+    private twoNode(i: number, node: Vertex): Vertex { //get the ith two-node from the given node
+        //console.log(node);
+        this.rangeCheckValues(i, node);
+        const left: Vertex | undefined = node.nodes[i];
+        const right: Vertex | undefined =  node.nodes[i+1];
+        let children: Vertex[] = [];
+        if(left !== undefined) children.push(left);
+        if(right !== undefined) children.push(right);
+        return {
+            values: [node.values[i]],
+            nodes: children
+        }
+    }
+
+    getTree(): Vertex {
         return this.tree;
     }
 
